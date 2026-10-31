@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Happy Halloween</title>
+  <meta name="theme-color" content="#0a0612">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎃</text></svg>">
+  <style>
+    @font-face {
+      font-family: "Creepster";
+      src: url("fonts/Creepster-Regular.woff2") format("woff2");
+      font-display: swap;
+    }
+
+    :root {
+      --night: #0a0612;
+      --ground: #050308;
+      --orange: #ff8a1d;
+      --bone: #f2e6cf;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { height: 100%; margin: 0; }
+
+    body {
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--bone);
+      background: radial-gradient(130% 90% at 80% 0%, #3b1d5e 0%, #1b0e30 45%, var(--night) 100%);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    body:not(.playing) { cursor: pointer; }
+
+    /* ---------- Scenery ---------- */
+
+    .scene {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .stars, .stars::after {
+      position: absolute;
+      inset: 0;
+      animation: twinkle 3s ease-in-out infinite alternate;
+    }
+    .stars {
+      background-image:
+        radial-gradient(1.5px 1.5px at 20px 30px, #fff, transparent),
+        radial-gradient(1px 1px at 90px 120px, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 160px 60px, #fff, transparent),
+        radial-gradient(1px 1px at 200px 180px, #fff, transparent),
+        radial-gradient(1px 1px at 50px 200px, #fff, transparent),
+        radial-gradient(2px 2px at 130px 10px, #fff, transparent);
+      background-size: 230px 230px;
+      -webkit-mask-image: linear-gradient(#000 30%, transparent 80%);
+      mask-image: linear-gradient(#000 30%, transparent 80%);
+    }
+    .stars::after {
+      content: "";
+      background-image:
+        radial-gradient(1px 1px at 40px 80px, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 150px 160px, #fff, transparent),
+        radial-gradient(1px 1px at 260px 40px, #fff, transparent),
+        radial-gradient(2px 2px at 320px 250px, #fff, transparent),
+        radial-gradient(1px 1px at 100px 300px, #fff, transparent),
+        radial-gradient(1px 1px at 210px 330px, #fff, transparent);
+      background-size: 370px 370px;
+      animation-duration: 4.3s;
+    }
+
+    .moon {
+      position: absolute;
+      top: 7vh;
+      right: 9vw;
+      width: clamp(70px, 17vmin, 150px);
+      height: clamp(70px, 17vmin, 150px);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 30% 36%, rgba(120, 90, 40, .12) 0 9%, transparent 10%),
+        radial-gradient(circle at 62% 62%, rgba(120, 90, 40, .12) 0 13%, transparent 14%),
+        radial-gradient(circle at 70% 28%, rgba(120, 90, 40, .1) 0 6%, transparent 7%),
+        radial-gradient(circle at 40% 40%, #fffbea, #f3e3a6 70%, #dcc67c);
+      box-shadow: 0 0 30px 6px rgba(255, 236, 170, .35), 0 0 120px 40px rgba(255, 220, 140, .12);
+    }
+
+    .bat {
+      position: absolute;
+      left: 0;
+      top: var(--top);
+      width: var(--size);
+      animation: fly var(--dur) linear var(--delay) infinite;
+    }
+    .bat > div { animation: bob 1.7s ease-in-out infinite alternate; }
+    .bat svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      fill: #07040b;
+      transform-origin: 50% 40%;
+      animation: flap .28s ease-in-out infinite alternate;
+    }
+
+    .hills {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+    }
+    .hills.far { height: clamp(70px, 20vh, 210px); fill: #140b22; }
+    .hills.near { height: clamp(50px, 13vh, 140px); fill: var(--ground); }
+
+    .tree {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: clamp(120px, 24vw, 340px);
+      color: var(--ground);
+    }
+
+    .fog {
+      position: absolute;
+      left: -50%;
+      right: -50%;
+      bottom: -5vh;
+      height: 35vh;
+      background:
+        radial-gradient(40% 60% at 20% 80%, rgba(180, 170, 210, .16), transparent 70%),
+        radial-gradient(35% 50% at 55% 90%, rgba(180, 170, 210, .12), transparent 70%),
+        radial-gradient(40% 60% at 85% 80%, rgba(180, 170, 210, .14), transparent 70%);
+      animation: drift 40s ease-in-out infinite alternate;
+    }
+
+    /* ---------- Pumpkin + text ---------- */
+
+    main {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: clamp(.25rem, 2vmin, 1rem);
+      padding: 16px;
+      text-align: center;
+    }
+
+    .lantern {
+      position: relative;
+      isolation: isolate;
+      width: min(48vmin, 280px);
+    }
+    .lantern::before {
+      content: "";
+      position: absolute;
+      inset: -30%;
+      z-index: -1;
+      background: radial-gradient(closest-side, rgba(255, 150, 40, .55), rgba(255, 110, 0, .18) 55%, transparent);
+      opacity: 0;
+      transition: opacity 1.5s ease;
+      animation: breathe 3.2s ease-in-out infinite alternate;
+    }
+    .playing .lantern::before { opacity: 1; }
+
+    .pumpkin { display: block; width: 100%; height: auto; overflow: visible; }
+    .pumpkin .stem { fill: #4f6b22; }
+    .pumpkin .vine { fill: none; stroke: #4f6b22; stroke-width: 3; stroke-linecap: round; }
+    .face-dark { fill: #2a1003; stroke: #4a1c02; stroke-width: 4; stroke-linejoin: round; }
+    .face-lit { opacity: 0; transition: opacity 1.2s ease; }
+    .playing .face-lit { opacity: 1; }
+    .flame { fill: url(#flame); filter: url(#glow); animation: flicker 2.6s linear infinite; }
+
+    h1 {
+      margin: 0;
+      font-family: "Creepster", "Chiller", Georgia, serif;
+      font-weight: normal;
+      font-size: clamp(2.2rem, min(10vw, 13vh), 5.5rem);
+      line-height: 1.05;
+      letter-spacing: .04em;
+      color: var(--orange);
+      text-shadow: 0 0 .3em rgba(255, 106, 0, .55), 0 .05em 0 #4a1600;
+    }
+
+    .hint {
+      margin: 0;
+      visibility: hidden;
+      font-size: clamp(.8rem, 2.4vmin, 1.05rem);
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      text-shadow: 0 1px 6px #000;
+    }
+    .hint.show { visibility: visible; animation: pulse 2.4s ease-in-out infinite; }
+    .hint .tap { display: none; }
+    @media (hover: none) and (pointer: coarse) {
+      .hint .tap { display: inline; }
+      .hint .click { display: none; }
+    }
+
+    /* ---------- Animations ---------- */
+
+    @keyframes twinkle { from { opacity: .45; } to { opacity: 1; } }
+    @keyframes fly { from { transform: translateX(-20vw); } to { transform: translateX(120vw); } }
+    @keyframes bob { from { transform: translateY(-1.5vh); } to { transform: translateY(1.5vh); } }
+    @keyframes flap { from { transform: scaleY(1); } to { transform: scaleY(.3); } }
+    @keyframes drift { from { transform: translateX(-8%); } to { transform: translateX(8%); } }
+    @keyframes breathe { from { transform: scale(.94); } to { transform: scale(1.06); } }
+    @keyframes pulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      12% { opacity: .82; }
+      20% { opacity: .96; }
+      34% { opacity: .78; }
+      48% { opacity: 1; }
+      63% { opacity: .87; }
+      80% { opacity: .97; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .bat { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+    <symbol id="bat" viewBox="0 0 100 44">
+      <path d="M50 16 L46 9 L44 17 C36 10 20 8 4 16 C12 18 16 24 16 30 C22 25 30 26 32 32 C38 27 44 28 48 36 L50 40 L52 36 C56 28 62 27 68 32 C70 26 78 25 84 30 C84 24 88 18 96 16 C80 8 64 10 56 17 L54 9 Z"/>
+    </symbol>
+  </svg>
+
+  <div class="scene" aria-hidden="true">
+    <div class="stars"></div>
+    <div class="moon"></div>
+
+    <div class="bat" style="--top: 14%; --size: 58px; --dur: 16s; --delay: -3s"><div><svg viewBox="0 0 100 44"><use href="#bat"/></svg></div></div>
+    <div class="bat" style="--top: 27%; --size: 40px; --dur: 21s; --delay: -12s"><div><svg viewBox="0 0 100 44"><use href="#bat"/></svg></div></div>
+    <div class="bat" style="--top: 8%; --size: 30px; --dur: 26s; --delay: -19s"><div><svg viewBox="0 0 100 44"><use href="#bat"/></svg></div></div>
+
+    <svg class="hills far" viewBox="0 0 1000 100" preserveAspectRatio="none">
+      <path d="M0 100 L0 40 C150 10 300 20 420 34 C540 48 640 20 780 22 C880 24 950 34 1000 30 L1000 100 Z"/>
+    </svg>
+
+    <svg class="tree" viewBox="0 0 200 300">
+      <path fill="currentColor" d="M22 300 C32 250 30 210 40 175 C48 148 50 120 58 95 L70 97 C64 122 62 150 58 178 C52 214 58 252 60 300 Z"/>
+      <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke-width="10" d="M50 180 C78 166 104 162 132 136"/>
+        <path stroke-width="6" d="M132 136 C150 124 160 112 182 110"/>
+        <path stroke-width="4" d="M106 158 C116 142 114 124 126 110"/>
+        <path stroke-width="4" d="M150 124 C154 110 150 98 158 86"/>
+        <path stroke-width="8" d="M56 124 C40 104 28 96 8 94"/>
+        <path stroke-width="4" d="M30 98 C26 84 28 72 20 60"/>
+        <path stroke-width="7" d="M64 98 C70 74 66 58 76 38"/>
+        <path stroke-width="4" d="M76 38 C78 26 74 18 82 6"/>
+        <path stroke-width="5" d="M66 84 C86 74 98 66 118 64"/>
+        <path stroke-width="3" d="M100 66 C106 54 104 44 112 34"/>
+        <path stroke-width="3" d="M118 64 C130 62 138 56 146 46"/>
+      </g>
+    </svg>
+
+    <svg class="hills near" viewBox="0 0 1000 100" preserveAspectRatio="none">
+      <path d="M0 100 L0 52 C110 28 230 30 340 48 C450 66 560 72 680 54 C780 38 900 26 1000 40 L1000 100 Z"/>
+    </svg>
+
+    <div class="fog"></div>
+  </div>
+
+  <main>
+    <div class="lantern" aria-hidden="true">
+      <svg class="pumpkin" viewBox="0 0 240 220">
+        <defs>
+          <radialGradient id="skin" cx="42%" cy="35%" r="75%">
+            <stop offset="0" stop-color="#f99a32"/>
+            <stop offset=".55" stop-color="#e2680a"/>
+            <stop offset="1" stop-color="#963a00"/>
+          </radialGradient>
+          <radialGradient id="skin-dark" cx="42%" cy="35%" r="75%">
+            <stop offset="0" stop-color="#e17a1a"/>
+            <stop offset=".6" stop-color="#bb5300"/>
+            <stop offset="1" stop-color="#6e2900"/>
+          </radialGradient>
+          <radialGradient id="flame" gradientUnits="userSpaceOnUse" cx="120" cy="140" r="75">
+            <stop offset="0" stop-color="#fffef2"/>
+            <stop offset=".35" stop-color="#ffec8a"/>
+            <stop offset=".75" stop-color="#ffc43d"/>
+            <stop offset="1" stop-color="#ffa01f"/>
+          </radialGradient>
+          <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <g id="face">
+            <path d="M74 114 L96 82 L108 116 Z"/>
+            <path d="M166 114 L144 82 L132 116 Z"/>
+            <path d="M120 120 L110 138 L130 138 Z"/>
+            <path d="M60 146 Q76 153.5 92 157 L92 167 L104 169 L104 159 Q120 161 136 159 L136 169 L148 167 L148 157 Q164 153.5 180 146 Q153 183.8 126 187.6 L126 177.6 L114 177.6 L114 187.6 Q87 183.8 60 146 Z"/>
+          </g>
+        </defs>
+
+        <path class="stem" d="M112 52 C110 38 114 26 126 18 C130 16 135 19 133 24 C125 31 122 40 125 52 Z"/>
+        <path class="vine" d="M127 40 C141 34 152 42 148 51 C145 58 136 55 139 49"/>
+        <g stroke="#8a3600" stroke-opacity=".45" stroke-width="2">
+          <ellipse cx="72" cy="128" rx="52" ry="76" fill="url(#skin-dark)"/>
+          <ellipse cx="168" cy="128" rx="52" ry="76" fill="url(#skin-dark)"/>
+          <ellipse cx="97" cy="126" rx="45" ry="80" fill="url(#skin)"/>
+          <ellipse cx="143" cy="126" rx="45" ry="80" fill="url(#skin)"/>
+          <ellipse cx="120" cy="125" rx="38" ry="82" fill="url(#skin)"/>
+        </g>
+        <use href="#face" class="face-dark"/>
+        <g class="face-lit"><use href="#face" class="flame"/></g>
+      </svg>
+    </div>
+
+    <h1>Happy Halloween</h1>
+    <p class="hint" id="hint"><span class="click">Click</span><span class="tap">Tap</span> anywhere to summon the music</p>
+  </main>
+
+  <audio id="music" src="Halloween_2026.mp3" loop preload="auto"></audio>
+
+  <script>
+    (() => {
+      const music = document.getElementById("music");
+      const hint = document.getElementById("hint");
+      const showHint = (show) => hint.classList.toggle("show", show);
+
+      function start() {
+        if (!music.paused) return;
+        music.play().catch((err) => {
+          // Browsers block sound until the visitor has interacted with the page.
+          if (err.name === "NotAllowedError") showHint(true);
+        });
+      }
+
+      function failed() {
+        hint.textContent = "The spirits are silent… the music could not be loaded.";
+        showHint(true);
+      }
+
+      music.addEventListener("playing", () => {
+        document.body.classList.add("playing");
+        showHint(false);
+      });
+
+      // If something outside the page pauses the music (lock-screen controls, a phone call, …),
+      // put the pumpkin out and let the next click or tap bring it back.
+      music.addEventListener("pause", () => {
+        document.body.classList.remove("playing");
+        showHint(true);
+      });
+
+      music.addEventListener("error", failed);
+      if (music.error) failed();
+
+      for (const type of ["click", "keydown", "touchend"]) {
+        document.addEventListener(type, start);
+      }
+
+      // Try to start right away; most browsers will wait for the first click/tap.
+      start();
+    })();
+  </script>
+</body>
+</html>
